@@ -2,6 +2,13 @@ use reqwest::{header::COOKIE};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+pub struct SearchUser {
+    pub id: u64,
+    pub username: String,
+    pub status: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct User {
     pub bio: String,
     pub username: String,
@@ -45,6 +52,30 @@ pub async fn fetch_newest_user(client: &reqwest::Client) -> Option<String> {
 
         if ok {low = mid;} else {high = mid;}
     } Some(low.to_string())
+}
+
+pub async fn fetch_id_by_name(
+    client: &reqwest::Client,
+    name: &str,
+) -> Option<String> {
+    let users = client
+        .get(format!(
+            "https://vortex.towerstats.com/api/users/search?q={name}"
+        ))
+        .header(COOKIE, SESSION)
+        .send()
+        .await
+        .ok()?
+        .error_for_status()
+        .ok()?
+        .json::<Vec<SearchUser>>()
+        .await
+        .ok()?;
+
+    users
+        .iter()
+        .find(|u| u.username.eq_ignore_ascii_case(name))
+        .map(|u| u.id.to_string())
 }
 
 pub async fn fetch_user_name(client: &reqwest::Client, id: &str) -> Option<String> {

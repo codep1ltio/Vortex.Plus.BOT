@@ -18,9 +18,7 @@ fn request_token() -> String {
 
     print!("Input Bot Token > ");
     io::stdout().flush().expect("Failed to flush stdout");
-    io::stdin()
-        .read_line(&mut token)
-        .expect("Failed to read.");
+    io::stdin().read_line(&mut token).expect("Failed to read.");
 
     token.trim().to_string()
 }
@@ -37,8 +35,8 @@ pub async fn init() {
 
     #[async_trait]
     impl EventHandler for Handler {
-        async fn ready(&self, ctx: Context, _ready: Ready) {
-            send_msg(&ctx, 1501231549524213863, "I have been initialized. Say `+help` for commands.").await;
+        async fn ready(&self, _ctx: Context, _ready: Ready) {
+            //..
         }
 
         async fn message(&self, ctx: Context, msg: Message) {
@@ -54,43 +52,102 @@ pub async fn init() {
             match command {
                 "+help" => {
                     let text = "\
-                        **Commands**\n`whoisid <id> / latest` | `fetch <id> / newest`: finds user info by ID / fetches latest user";
+            **Commands**\n\
+            `fetch id <id>` / `whois id <id>`\n\
+            `fetch name <name>` / `whois name <name>`\n\
+            `fetch newest` / `fetch latest`\n\
+            `whois newest` / `whois latest`";
                     let _ = msg.channel_id.say(&ctx.http, text).await;
                 }
 
-                "whoisid" | "fetch" => {
-                    let Some(arg) = parts.next() else {
+                "fetch" | "whois" => {
+                    let Some(kind) = parts.next() else {
                         return;
                     };
 
-                    if matches!(arg, "latest" | "newest") {
-                        let _ = msg.channel_id.say(
-                            &ctx.http,
-                            "Attempting to fetch latest user, please wait..\n-# Fetching can take up to 15 seconds *(Binary Search Algorithm)*",
-                        ).await;
+                    match kind {
+                        "id" => {
+                            let Some(arg) = parts.next() else {
+                                return;
+                            };
 
-                        let id = fetch_newest_user(&self.client)
-                            .await
-                            .unwrap_or_else(|| "0".to_string());
+                            if matches!(arg, "latest" | "newest") {
+                                let _ = msg.channel_id.say(
+                        &ctx.http,
+                        "Attempting to fetch latest user, please wait..\n-# Fetching can take up to 15 seconds *(Binary Search Algorithm)*",
+                    ).await;
 
-                        let username = fetch_user_name(&self.client, &id)
-                            .await
-                            .unwrap_or_else(|| "None".to_string());
+                                let id = fetch_newest_user(&self.client)
+                                    .await
+                                    .unwrap_or_else(|| "0".to_string());
 
-                        let usr = format!("{username} (NEWEST)");
-                        let desc = build_user_desc(&self.client, &id).await;
-                        let _ = send_embed(&ctx, &usr, &desc, "", &msg).await;
-                        return;
-                    }
+                                let username = fetch_user_name(&self.client, &id)
+                                    .await
+                                    .unwrap_or_else(|| "None".to_string());
 
-                    match fetch_user::fetch_user_name(&self.client, arg).await {
-                        Some(username) => {
-                            let desc = build_user_desc(&self.client, arg).await;
-                            let _ = send_embed(&ctx, &username, &desc, "", &msg).await;
+                                let usr = format!("{username} (NEWEST)");
+                                let desc = build_user_desc(&self.client, &id).await;
+                                let _ = send_embed(&ctx, &usr, &desc, "", &msg).await;
+                                return;
+                            }
+
+                            match fetch_user::fetch_user_name(&self.client, arg).await {
+                                Some(username) => {
+                                    let desc = build_user_desc(&self.client, arg).await;
+                                    let _ = send_embed(&ctx, &username, &desc, "", &msg).await;
+                                }
+                                None => {
+                                    let _ = msg.channel_id.say(&ctx.http, "User not found").await;
+                                }
+                            }
                         }
-                        None => {
-                            let _ = msg.channel_id.say(&ctx.http, "User not found").await;
+
+                        "name" => {
+                            let Some(arg) = parts.next() else {
+                                return;
+                            };
+
+                            let id = fetch_id_by_name(&self.client, arg).await;
+
+                            match id.as_deref() {
+                                Some(id) => match fetch_user::fetch_user_name(&self.client, id)
+                                    .await
+                                {
+                                    Some(username) => {
+                                        let desc = build_user_desc(&self.client, id).await;
+                                        let _ = send_embed(&ctx, &username, &desc, "", &msg).await;
+                                    }
+                                    None => {
+                                        let _ =
+                                            msg.channel_id.say(&ctx.http, "User not found").await;
+                                    }
+                                },
+                                None => {
+                                    let _ = msg.channel_id.say(&ctx.http, "User not found").await;
+                                }
+                            }
                         }
+
+                        "latest" | "newest" => {
+                            let _ = msg.channel_id.say(
+                    &ctx.http,
+                    "Attempting to fetch latest user, please wait..\n-# Fetching can take up to 15 seconds *(Binary Search Algorithm)*",
+                ).await;
+
+                            let id = fetch_newest_user(&self.client)
+                                .await
+                                .unwrap_or_else(|| "0".to_string());
+
+                            let username = fetch_user_name(&self.client, &id)
+                                .await
+                                .unwrap_or_else(|| "None".to_string());
+
+                            let usr = format!("{username} (NEWEST)");
+                            let desc = build_user_desc(&self.client, &id).await;
+                            let _ = send_embed(&ctx, &usr, &desc, "", &msg).await;
+                        }
+
+                        _ => {}
                     }
                 }
 
