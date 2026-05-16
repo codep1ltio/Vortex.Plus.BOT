@@ -1,11 +1,12 @@
 use reqwest::{header::COOKIE};
 use serde::Deserialize;
+use std::io::{self, Write};
+use std::sync::LazyLock;
 
 #[derive(Debug, Deserialize)]
 pub struct SearchUser {
     pub id: u64,
     pub username: String,
-    pub status: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,15 +21,27 @@ pub struct User {
     pub created_at: String,
 }
 
-static SESSION: &str = "session_token=0b6aa443c12d27a4867961a1c7c737fc5a2c65214c9decf207fccb9df47808dc";
+static SESSION: LazyLock<String> = LazyLock::new(|| {
+    let mut token = String::new();
+
+    print!("Input Session Token > ");
+    io::stdout().flush().unwrap();
+
+    io::stdin()
+        .read_line(&mut token)
+        .unwrap();
+
+    token.trim().to_string()
+});
 
 pub async fn fetch_newest_user(client: &reqwest::Client) -> Option<String> {
     let mut low = 1u64;
     let mut high = 1u64;
+    let session: &str = &SESSION;
     loop {
         let ok = client
             .get(format!("https://vortex.towerstats.com/api/users/{high}"))
-            .header(COOKIE, SESSION)
+            .header(COOKIE, session)
             .send()
             .await
             .ok()?
@@ -43,7 +56,7 @@ pub async fn fetch_newest_user(client: &reqwest::Client) -> Option<String> {
 
         let ok = client
             .get(format!("https://vortex.towerstats.com/api/users/{mid}"))
-            .header(COOKIE, SESSION)
+            .header(COOKIE, session)
             .send()
             .await
             .ok()?
@@ -58,11 +71,12 @@ pub async fn fetch_id_by_name(
     client: &reqwest::Client,
     name: &str,
 ) -> Option<String> {
+    let session: &str = &SESSION;
     let users = client
         .get(format!(
             "https://vortex.towerstats.com/api/users/search?q={name}"
         ))
-        .header(COOKIE, SESSION)
+        .header(COOKIE, session)
         .send()
         .await
         .ok()?
@@ -79,11 +93,12 @@ pub async fn fetch_id_by_name(
 }
 
 pub async fn fetch_user_name(client: &reqwest::Client, id: &str) -> Option<String> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -97,11 +112,12 @@ pub async fn fetch_user_name(client: &reqwest::Client, id: &str) -> Option<Strin
 }
 
 pub async fn fetch_user_bio(client: &reqwest::Client, id: &str) -> Option<String> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -115,11 +131,12 @@ pub async fn fetch_user_bio(client: &reqwest::Client, id: &str) -> Option<String
 }
 
 pub async fn fetch_user_status(client: &reqwest::Client, id: &str) -> Option<String> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -133,11 +150,12 @@ pub async fn fetch_user_status(client: &reqwest::Client, id: &str) -> Option<Str
 }
 
 pub async fn fetch_user_friends(client: &reqwest::Client, id: &str) -> Option<u8> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -151,11 +169,12 @@ pub async fn fetch_user_friends(client: &reqwest::Client, id: &str) -> Option<u8
 }
 
 pub async fn fetch_user_followers(client: &reqwest::Client, id: &str) -> Option<u8> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -169,11 +188,12 @@ pub async fn fetch_user_followers(client: &reqwest::Client, id: &str) -> Option<
 }
 
 pub async fn fetch_user_following(client: &reqwest::Client, id: &str) -> Option<u8> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -187,11 +207,12 @@ pub async fn fetch_user_following(client: &reqwest::Client, id: &str) -> Option<
 }
 
 pub async fn fetch_user_visits(client: &reqwest::Client, id: &str) -> Option<u8> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await
@@ -205,11 +226,12 @@ pub async fn fetch_user_visits(client: &reqwest::Client, id: &str) -> Option<u8>
 }
 
 pub async fn fetch_user_creation(client: &reqwest::Client, id: &str) -> Option<String> {
+    let session: &str = &SESSION;
     client
         .get(format!("https://vortex.towerstats.com/api/users/{id}"))
         .header(
             COOKIE,
-            SESSION,
+            session,
         )
         .send()
         .await

@@ -6,11 +6,7 @@ mod helper;
 use fetch_user::*;
 use helper::*;
 
-use serenity::{
-    async_trait,
-    model::{channel::Message, gateway::Ready},
-    prelude::*,
-};
+use serenity::all::*;
 use std::sync::Arc;
 
 fn request_token() -> String {
